@@ -1,0 +1,23 @@
+# Microchip Studio / Visual Studio temporary files
+.vs/
+
+# Build output
+**/Debug/
+**/Release/
+
+# Compiled object files
+*.o
+
+# Dependency files
+*.d
+
+# Compiled firmware / linker output
+*.elf
+*.hex
+*.eep
+*.srec
+*.map
+*.lss
+
+# Temporary files
+*.tmp
