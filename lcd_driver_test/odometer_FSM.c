@@ -134,10 +134,11 @@
   }
   
   void disp_lifetime(void){
-	  sprintf(line1Buff, "LIFETIME STATS:");
-	  sprintf(line2Buff, "DISTANCE: ");
-	  sprintf(line3Buff, "TIME: ");
-	  sprintf(line4Buff, "TOP SPEED: ");
+	  sprintf(line1Buff, "    CURRENT RIDE    ");
+	  sprintf(line2Buff, "                    ");
+	  sprintf(line3Buff, "           MI/H     ");
+	  sprintf(line4Buff, "             MI     ");
+	  
 	  
 	  updatePageFlag = 0xFF;
   }

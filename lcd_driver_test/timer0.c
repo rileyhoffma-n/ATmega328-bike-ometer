@@ -13,6 +13,10 @@ volatile uint8_t numHundredMsTicks;
 volatile uint8_t oneSecondFlag;
 volatile uint8_t hundredMillisecondFlag;	
 
+uint8_t secondsRide;
+uint8_t minutesRide;
+uint8_t hoursRide;
+
 
 /**** FUNCTIONS ****/
 
@@ -31,6 +35,29 @@ void init_tcnt0(){	//initialize TCNT0 for normal mode, clk_io/8 prescale, reset 
 	//This should trigger the interrupt every 2 milliseconds for a 1 MHz F_CPU
 	
 	sei();
+	
+	//start the ride time at 00:00:00
+	secondsRide = 0;
+	minutesRide = 0;
+	hoursRide = 0;
+}
+
+void increase_ride_time(){
+	secondsRide++;
+	
+	if(secondsRide >= 60){
+		minutesRide++;
+		secondsRide = 0;
+		if(minutesRide >= 60){
+			hoursRide++;
+			minutesRide = 0;
+		}
+	}
+	
+}
+
+void increase_lifetime_time(){
+	
 }
 
 

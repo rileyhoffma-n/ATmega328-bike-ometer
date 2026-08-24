@@ -18,8 +18,8 @@ char line1Buff[21];	//holds the LCD image
 char line2Buff[21];
 char line3Buff[21];
 char line4Buff[21];
-char speedBuff[16];	//room for speed to start on spot 5, + /0
-
+//char speedBuff[16];	//room for speed to start on spot 5, + /0
+char rideBuff[21];	//room for speed, time, and distance numbers only + \0
 
 //**** FUNCTIONS ****
 uint8_t send_4bit_nibble(uint8_t nibble){	//FORMAT: D7, D6, D5, D4, BT, E, R/W, RS, assumes I2C frame is already started
@@ -218,31 +218,81 @@ uint8_t LCD_update_image(uint8_t saddr){
 	return 0xFF; //success
 }
 
-uint8_t updateSpeedLCD(uint8_t saddr){	//only changes the characters showing the speed on the lcd to save time and cpu
-	//assuming the display has line 1 reading "MPH: " then the speed, so the numbers start at the 5th spot on line one
+// uint8_t updateSpeedLCD(uint8_t saddr){	//only changes the characters showing the speed on the lcd to save time and cpu
+// 	//assuming the display has line 1 reading "MPH: " then the speed, so the numbers start at the 5th spot on line one
+// 	
+// 	if(!I2C_start_write(saddr)){	//start the frame and address the LCD backpack
+// 		return 0x00;	//if the addressing failed at any point, return 0
+// 	}
+// 	
+// 	if(!set_DDRAM_location(LCD_line1_start + 5)){	//set the cursor to the 5th spot on line 1
+// 		return 0x00;
+// 	}
+// 	
+// 	//send char by char until null terminator reached while updating address variable
+// 	uint8_t i;
+// 	for(i = 0; speedBuff[i] != '\0'; i++){
+// 		if(!send_character(speedBuff[i])){
+// 			return 0x00;
+// 		}
+// 		currentDDRAMaddress++;
+// 	}
+// 	
+// 	//In order to "clear" the rest of the line, send a few spaces
+// 	for(uint8_t j = 0; j < 3; j++){
+// 		if(!send_character(' ')){
+// 			return 0x00;
+// 		}
+// 	}
+// 	
+// 	I2C_stop();	//stop the communication
+// 	
+// 	return 0xFF; //success
+// }
+
+uint8_t updateRideLCD(uint8_t saddr){	//only changes the numbers (not the constant letters) to save time and cpu
+	/*assuming the display is
+	----CURRENT RIDE----
+	------xx:xx:xx------
+	-----xx.xx MI/H-----
+	-----xxxx.xx MI-----*/
 	
 	if(!I2C_start_write(saddr)){	//start the frame and address the LCD backpack
 		return 0x00;	//if the addressing failed at any point, return 0
 	}
 	
-	if(!set_DDRAM_location(LCD_line1_start + 5)){	//set the cursor to the 5th spot on line 1
+	if(!set_DDRAM_location(LCD_line2_start + 6)){	//set the cursor to the 6th spot on line 2 for the time
 		return 0x00;
 	}
-	
-	//send char by char until null terminator reached while updating address variable
-	uint8_t i;
-	for(i = 0; speedBuff[i] != '\0'; i++){
-		if(!send_character(speedBuff[i])){
+	//send the time char by char until the speed is reached
+	uint8_t i = 0;
+	for(i; i < RIDE_BUFF_SPEED; i++){
+		if(!send_character(rideBuff[i])){
 			return 0x00;
 		}
 		currentDDRAMaddress++;
 	}
 	
-	//In order to "clear" the rest of the line, send a few spaces
-	for(uint8_t j = 0; j < 3; j++){
-		if(!send_character(' ')){
+	if(!set_DDRAM_location(LCD_line3_start + 5)){	//set the cursor to the 5th spot on line 3 for the speed
+		return 0x00;
+	}
+	//send the speed char by char until the distance is reached
+	for(i; i < RIDE_BUFF_DISTANCE; i++){
+		if(!send_character(rideBuff[i])){
 			return 0x00;
 		}
+		currentDDRAMaddress++;
+	}
+	
+	if(!set_DDRAM_location(LCD_line4_start + 5)){	//set the cursor to the 5th spot on line 4 for the distance
+		return 0x00;
+	}
+	//send the distance char by char until the \0 is reached
+	for(i; rideBuff[i] != '\0'; i++){
+		if(!send_character(rideBuff[i])){
+			return 0x00;
+		}
+		currentDDRAMaddress++;
 	}
 	
 	I2C_stop();	//stop the communication

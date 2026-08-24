@@ -18,10 +18,16 @@ extern volatile uint8_t oneSecondFlag;	//used to indicate when one second has el
 extern volatile uint8_t hundredMillisecondFlag;	
 extern volatile uint8_t numHundredMsTicks;
 
+extern uint8_t secondsRide;
+extern uint8_t minutesRide;
+extern uint8_t hoursRide;
+
 /**** MACROS ****/
 
 /**** CALLABLE FUNCTIONS ****/
 void init_tcnt0();
+void increase_ride_time();
+void increase_lifetime_time();
 
 
 /**** INTERNAL FUNCTIONS ****/

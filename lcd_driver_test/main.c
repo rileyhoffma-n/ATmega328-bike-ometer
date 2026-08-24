@@ -26,17 +26,14 @@ int main(void)
 	
 	updateSpeedNumerator();
 	rawSpeed = 0;
-	uint8_t wholeMPH = 0;
-	uint8_t fracMPH = 0;
-	
-	sprintf(line1Buff, "MPH: 00.00");
-	sprintf(line2Buff, "assume 27.5in tire");
-	sprintf(line3Buff, "updated for last");
-	sprintf(line4Buff, "detected revolution");
-	
-	LCD_update_image(saddr);
 	
 	present_state = RIDE;	//have the FSM start in the RIDE state by default
+	sprintf(line1Buff, "    CURRENT RIDE    ");
+	sprintf(line2Buff, "                    ");
+	sprintf(line3Buff, "           MI/H     ");
+	sprintf(line4Buff, "             MI     ");
+	
+	LCD_update_image(saddr);
 	
 	//flags for main loop
 	//CCOMBINE THEM INTO ONE VARIABLE WITH MACROS ONCE YOU KNOW IT WORKS
@@ -44,8 +41,13 @@ int main(void)
 	uint8_t updateRIDEFlag = 0x00;
 	uint8_t updateLIFETIMEFlag = 0x00;
 	
-	//variable for heartbeat seconds counted
-	uint16_t secondsCounted = 0x00;	//starts at 0, will be incremented on each heartbeat
+	//variables for the current ride
+	
+	uint8_t wholeMPH = 0;
+	uint8_t fracMPH = 0;
+	
+	uint16_t wholeDistanceRide = 0;
+	uint8_t fracDistanceRide = 0;	//the hundredths of each unit of distance
 
 	while(1){
 		if(pressedFlag){	//if a button has been pressed
@@ -57,7 +59,7 @@ int main(void)
 		}
 		
 		if(oneSecondFlag){	//if one second has elapsed, update the time
-			secondsCounted++;	//update time variable
+			increase_ride_time();
 			oneSecondFlag = 0x00;	//clear the one second flag			
 		}
 		
@@ -80,10 +82,11 @@ int main(void)
 			if(present_state == RIDE){
 				
 				//TEMPORARY FOR TESTING
-				sprintf(line1Buff, "RIDE STATS:");
-				sprintf(line2Buff, "DISTANCE: ");
-				sprintf(line3Buff, "TIME: %d", secondsCounted);
-				sprintf(line4Buff, "%d.%02d MPH", wholeMPH, fracMPH);
+// 				sprintf(line1Buff, "RIDE STATS:");
+// 				sprintf(line2Buff, "DISTANCE: ");
+// 				sprintf(line3Buff, "TIME: %d", secondsCounted);
+// 				sprintf(line4Buff, "%d.%02d MPH", wholeMPH, fracMPH);
+				sprintf(rideBuff, "%02d:%02d:%02d%02d.%02d%04d.%02d", hoursRide, minutesRide, secondsRide, wholeMPH, fracMPH, wholeDistanceRide, fracDistanceRide);
 				
 				//update the speed and time buffer
 				updateRIDEFlag = 0xFF;
@@ -93,7 +96,7 @@ int main(void)
 				//TEMPORARY FOR TESTING
 				sprintf(line1Buff, "LIFETIME STATS:");
 				sprintf(line2Buff, "DISTANCE: ");
-				sprintf(line3Buff, "TIME: %d", secondsCounted);
+				sprintf(line3Buff, "TIME: TEST");
 				sprintf(line4Buff, "TOP SPEED: ");
 				
 				//update the time buffer
@@ -110,7 +113,7 @@ int main(void)
 		}
 		if(updateRIDEFlag){
 			//TEMPORARY FOR TESTING
-			LCD_update_image(saddr);
+			updateRideLCD(saddr);
 			
 			//update RIDE
 			updateRIDEFlag = 0x00;	//clear flag

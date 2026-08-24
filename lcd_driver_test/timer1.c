@@ -73,13 +73,13 @@ void decay_raw_speed(){
 				rawSpeed = percent_decay(98, rawSpeed);	//reduce the speed to 98% of what it was
 			}
 			else if(factor > 3){	//if the extra time is 1/5 < x < 1/3
-				rawSpeed = percent_decay(97, rawSpeed);	//reduce the speed to 97% of what it was
+				rawSpeed = percent_decay(98, rawSpeed);	//reduce the speed to 98% of what it was
 			}
 			else if(factor > 2){	//if the extra time is 1/3 < x < 1/2
-				rawSpeed = percent_decay(95, rawSpeed);	//reduce the speed to 95% of what it was
+				rawSpeed = percent_decay(98, rawSpeed);	//reduce the speed to 98% of what it was
 			}
 			else{	//if the extra time is 1/2 < x < 1
-				rawSpeed = percent_decay(90, rawSpeed);	//reduce the speed to 90% of what it was
+				rawSpeed = percent_decay(97, rawSpeed);	//reduce the speed to 97% of what it was
 			}
 		}
 		else{	//if the extra time is more than the previous pulse, heavy decay is warranted
@@ -87,10 +87,10 @@ void decay_raw_speed(){
 			factor = extraTicks / previousElapsed;
 			
 			if(factor < 2){	//if the extra time 1 < x < 2
-				rawSpeed = percent_decay(85, rawSpeed);	//reduce the speed to 85% of what it was
+				rawSpeed = percent_decay(95, rawSpeed);	//reduce the speed to 85% of what it was
 			}
 			else if(factor < 3){	//if the extra time is 2 < x < 3
-				rawSpeed = percent_decay(80, rawSpeed);	//reduce the speed to 80% of what it was
+				rawSpeed = percent_decay(90, rawSpeed);	//reduce the speed to 80% of what it was
 			}
 			else{	//if the extra time is x > 3
 				rawSpeed = percent_decay(0, rawSpeed);	//reduce the speed to 0 MPH
