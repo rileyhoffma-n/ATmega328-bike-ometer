@@ -16,7 +16,7 @@
 #include "timer1.h"		//so that the FSM can change the wheel circumference and units for calculation
  
  //States in the FSM
- typedef enum {RIDE, LIFETIME, WHEEL, TENS_CHANGE, ONES_CHANGE, TENTHS_CHANGE, UNITS} state;
+ typedef enum {RIDE, LIFETIME, WHEEL, HUNDREDS_CHANGE, TENS_CHANGE, ONES_CHANGE, TENTHS_CHANGE, UNITS} state;
  
  //types of inputs possible
  typedef enum {BUTTON_UP, BUTTON_DOWN, BUTTON_NEXT, EOL} inputType;
@@ -25,6 +25,7 @@
  void error_func(void);
  void disp_lifetime(void);
  void disp_wheel(void);
+ void change_hundreds(void);
  void change_tens(void);
  void change_ones(void);
  void change_tenths(void);
@@ -36,10 +37,12 @@
  
  //supporting functions
  inputType getInput(void);		//tells the FSM what the input is based on the buttons
+ void disp_circ(void);	//updates buffer with wheel circumference in either cm or inches
  
  //supporting variables for the functions
  #define LCD_SADDR 0x27
  extern volatile uint8_t updatePageFlag;
+ extern volatile uint16_t placeToChange;	//stores the value of the place to be changed * 100, so 10000 for 100s, 1000 for 10s, etc
  
  //global variable to store the present state of the FSM
  extern volatile state present_state;

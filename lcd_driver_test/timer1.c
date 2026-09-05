@@ -10,9 +10,20 @@
 /**** GLOBALS ****/
 volatile uint16_t ticksPerRev;
 volatile uint16_t timeRevEnded;
-uint64_t speedNumerator;
 volatile uint8_t wheelRevCompleted;
-volatile uint64_t rawSpeed;	//the speed in mph x 100
+volatile uint32_t rawSpeed;	//the speed in mph x 100 * 1000 (times 100k)
+volatile uint8_t unitsFlag = 0x00;		//start in imperial units (0x00) by default
+volatile uint32_t wheelCircumference = 86390;	//the circumference of the wheel * 1000 in inches
+uint8_t wholeSpeed;
+uint8_t fracSpeed;
+
+volatile uint8_t revPerHundredthMile = 0;	//is 1 + the number of FULL ROTATIONS of the wheel needed to travel 100th of a mile
+volatile uint32_t leftoverPerHundredthMile = 0;	//(the fraction of a rotation EXTRA for every 1 + revPerHundredthMile completed) * 100,000
+volatile uint32_t leftoverCounter = 0;	//tracks extra rotations * 100,000
+volatile uint32_t leftoverTarget = 0;	//the value that the leftover counter has to reach for an extra 100th mile to be added to the odometer
+
+volatile uint8_t revCounter = 0;		//keeps track of the completed revolutions, will be serviced often enough such that it remains below 255
+volatile uint32_t hundredthsTraveled;	//the amount of hundredths of a mile that you've gone for this ride
 
 /**** FUNCTIONS ****/
 void init_tcnt1(){	//initialize TCNT1 for normal mode, clk_io/256 prescale, falling edge trigger
@@ -24,20 +35,19 @@ void init_tcnt1(){	//initialize TCNT1 for normal mode, clk_io/256 prescale, fall
 	sei();			//enable global interrupts
 }
 
-void updateSpeedNumerator(){	//to be called if the user changes the wheel circumference
-	speedNumerator = RAW_NUMERATOR * 8000;	//THE 8000 IS A STANDIN FOR THE EEPROM GLOBAL VARIABLE OF THE 27.5 in radius, WHEEL CIRCUMFERENCE x 100
-}
-
 void calculateRawSpeed(){	//raw speed is mph * 100
 	//this should mimic the equation [ (100 * wheelcircumference) * (F_CPU) * (3600)] / [ (prescale256) * (63360) * (#ofticks) ] = mph * 100 (with no decimal)
 		
 		cli();	//make sure that ticks per rev or the flag can't be changed while you are using it to calculate
 		wheelRevCompleted = 0;	//reset the revolution flag
-		uint64_t atomicTicks = ticksPerRev;
+		uint32_t atomicTicks = ticksPerRev;	//nothing should exceed 32 bits in these operations
 		sei();
-
-		uint64_t speedDenominator = (uint64_t)RAW_DENOMINATOR * atomicTicks;	//update the denominator based on time of last revolution
-	    rawSpeed = speedNumerator / speedDenominator;		//calcuate raw speed (should be mph*100)
+		
+		//calculate the raw speed using fixed-point arithmetic
+		rawSpeed = SPEED_FACTOR * wheelCircumference;	//should not exceed 32 bits if circumference is less than 193500
+		rawSpeed = rawSpeed / atomicTicks;	//integer division is done last to preserve accuracy
+		
+	//ADD METRIC CONVERSION LATER, SHOULD STILL FIT INTO UINT32_T AT NORMAL SPEEDS
 }
 
 void decay_raw_speed(){	
@@ -90,7 +100,7 @@ void decay_raw_speed(){
 				rawSpeed = percent_decay(95, rawSpeed);	//reduce the speed to 85% of what it was
 			}
 			else if(factor < 3){	//if the extra time is 2 < x < 3
-				rawSpeed = percent_decay(90, rawSpeed);	//reduce the speed to 80% of what it was
+				rawSpeed = percent_decay(94, rawSpeed);	//reduce the speed to 80% of what it was
 			}
 			else{	//if the extra time is x > 3
 				rawSpeed = percent_decay(0, rawSpeed);	//reduce the speed to 0 MPH
@@ -100,8 +110,13 @@ void decay_raw_speed(){
 	
 }
 
-uint64_t percent_decay(uint8_t percent, uint64_t number){	//returns roughly the percent of the 64 bit number w/o using floats
+uint64_t percent_decay(uint8_t percent, uint32_t number){	//returns roughly the percent of the 32 bit number w/o using floats
 	return( (number * percent) / 100);
+}
+
+void interpret_rawSpeed(){	//updates the fracSpeed and wholeSpeed variables (for display purposes)
+	  wholeSpeed = rawSpeed / 10000UL;
+	  fracSpeed = (rawSpeed % 10000UL) / 1000UL;	//gets it to two decimal places only
 }
 
 ISR(TIMER1_CAPT_vect){	//ISR for ICF1
@@ -110,4 +125,31 @@ ISR(TIMER1_CAPT_vect){	//ISR for ICF1
 	ticksPerRev = timeRevEnded - timeRevStarted;
 	
 	wheelRevCompleted = 0xFF;	//set the wheel rev flag to indicate that a new revolution has been completed
+	revCounter++;	//add a revolution to the count
+}
+
+void calculateFactorsForDistance(){	//takes circumference and updates the variables needed for distance counting, resets the extra upon wheel circumference change for simplicity
+	uint32_t rawRevPerHundredthMile = DISTANCE_FACTOR / wheelCircumference;		//is rev per 100th times 100,000, works even for wheels with 5 in diameter (extremely small)
+	
+	revPerHundredthMile = (rawRevPerHundredthMile / 100000UL) + 1;	//number of full revolutions to complete 100th of a mile WITH EXTRA
+	leftoverPerHundredthMile = 100000UL - (rawRevPerHundredthMile % 100000UL);	//(the fraction of a rotation EXTRA for every 1 + revPerHundredthMile completed) * 100,000
+	
+	leftoverTarget = 100000UL * revPerHundredthMile;	//the value that the leftover counter must hit to be awarded an extra 100th mile
+	leftoverCounter = 0;	//reset leftover counter after calculating data new wheel
+}
+
+void addDistance(){		//updates the amount of 100th miles you've gone
+	cli();	//make it atomic since revCounter could change
+	if(revCounter >= revPerHundredthMile){	//if you've gone 100th of a mile
+		hundredthsTraveled++;	//add a hundredth to the counter
+		revCounter = revCounter - revPerHundredthMile;	//decrease the counter to show that you've accounted for the previous batch of revolutions
+		
+		leftoverCounter = leftoverCounter + leftoverPerHundredthMile;	//add to the leftover counter
+		if(leftoverCounter >= leftoverTarget){	//if the leftovers are enough to earn an extra 100th mile
+			hundredthsTraveled++;	//add another 100th
+			leftoverCounter = leftoverCounter - leftoverTarget;	//decrease the counter to show you've taken care of the leftover
+		}
+	}
+	
+	sei();	//re enable interrupts
 }

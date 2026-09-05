@@ -24,7 +24,8 @@ int main(void)
 	buttons_init();	//initialize the buttons
 	sei();
 	
-	updateSpeedNumerator();
+	calculateFactorsForDistance();	//initialize odometer for new wheel size
+	
 	rawSpeed = 0;
 	
 	present_state = RIDE;	//have the FSM start in the RIDE state by default
@@ -43,13 +44,12 @@ int main(void)
 	
 	//variables for the current ride
 	
-	uint8_t wholeMPH = 0;
-	uint8_t fracMPH = 0;
-	
 	uint16_t wholeDistanceRide = 0;
 	uint8_t fracDistanceRide = 0;	//the hundredths of each unit of distance
 
 	while(1){
+		addDistance();	//add distance each loop JUST FOR TESTING ONLY
+		
 		if(pressedFlag){	//if a button has been pressed
 				
 			fsm(present_state, getInput());	//Run the FSM
@@ -70,32 +70,27 @@ int main(void)
 				
 				calculateRawSpeed();	//then calculate the raw speed
 				//this also clears the revolution flag
-				wholeMPH = rawSpeed / 100;
-				fracMPH = (rawSpeed % 100);
+				interpret_rawSpeed();
 			}
 			else{	//if no revolution has been completed, apply decay if necessary
 				decay_raw_speed();	//evaluates current pulse width and decays speed
-				wholeMPH = rawSpeed / 100;
-				fracMPH = (rawSpeed % 100);
+				interpret_rawSpeed();
 			}
 			
 			if(present_state == RIDE){
-				
-				//TEMPORARY FOR TESTING
-// 				sprintf(line1Buff, "RIDE STATS:");
-// 				sprintf(line2Buff, "DISTANCE: ");
-// 				sprintf(line3Buff, "TIME: %d", secondsCounted);
-// 				sprintf(line4Buff, "%d.%02d MPH", wholeMPH, fracMPH);
-				sprintf(rideBuff, "%02d:%02d:%02d%02d.%02d%04d.%02d", hoursRide, minutesRide, secondsRide, wholeMPH, fracMPH, wholeDistanceRide, fracDistanceRide);
-				
-				//update the speed and time buffer
+				sprintf(rideBuff, "%02d:%02d:%02d%02d.%02d%04d.%02d", hoursRide, minutesRide, secondsRide, wholeSpeed, fracSpeed, wholeDistanceRide, fracDistanceRide);
+				//update the speed, time and distance buffer
+				//then do the update ride function which only updates these values, not the other words on the screen
 				updateRIDEFlag = 0xFF;
 			}
 			else if(present_state == LIFETIME){
 				
 				//TEMPORARY FOR TESTING
-				sprintf(line1Buff, "LIFETIME STATS:");
-				sprintf(line2Buff, "DISTANCE: ");
+				uint16_t wholeHundredths = hundredthsTraveled / 100;
+				uint8_t fracHundredths = hundredthsTraveled % 100;
+				
+				sprintf(line1Buff, "DISTANCE TEST:");
+				sprintf(line2Buff, "HUNDREDTHS: %d", fracHundredths);
 				sprintf(line3Buff, "TIME: TEST");
 				sprintf(line4Buff, "TOP SPEED: ");
 				
