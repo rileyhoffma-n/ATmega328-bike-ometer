@@ -126,6 +126,12 @@
     <Compile Include="buttons.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="EEPROM328.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="EEPROM328.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="I2C_328.c">
       <SubType>compile</SubType>
     </Compile>

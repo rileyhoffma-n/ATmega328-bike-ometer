@@ -11,6 +11,7 @@
 #include "odometer_FSM.h"
 #include "timer1.h"
 #include "timer0.h"
+#include "EEPROM328.h"
 #include <stdio.h>	//for sprintf()
 
 
@@ -46,6 +47,11 @@ int main(void)
 	
 	uint16_t wholeDistanceRide = 0;
 	uint8_t fracDistanceRide = 0;	//the hundredths of each unit of distance
+	
+	//EEPROM TEST
+	uint8_t test_8;
+	uint16_t test_16;
+	uint32_t test_32;
 
 	while(1){
 		addDistance();	//add distance each loop JUST FOR TESTING ONLY
@@ -78,7 +84,7 @@ int main(void)
 			}
 			
 			if(present_state == RIDE){
-				sprintf(rideBuff, "%02d:%02d:%02d%02d.%02d%04d.%02d", hoursRide, minutesRide, secondsRide, wholeSpeed, fracSpeed, wholeDistanceRide, fracDistanceRide);
+				sprintf(rideBuff, "%02u:%02u:%02u%02u.%02u%04u.%02u", hoursRide, minutesRide, secondsRide, wholeSpeed, fracSpeed, wholeDistanceRide, fracDistanceRide);
 				//update the speed, time and distance buffer
 				//then do the update ride function which only updates these values, not the other words on the screen
 				updateRIDEFlag = 0xFF;
@@ -89,10 +95,21 @@ int main(void)
 				uint16_t wholeHundredths = hundredthsTraveled / 100;
 				uint8_t fracHundredths = hundredthsTraveled % 100;
 				
+				updateEEPROM_8(TEST_8_ADDRESS, 123);
+				updateEEPROM_16(TEST_16_ADDRESS, 0xF0F0);
+				updateEEPROM_32(TEST_32_ADDRESS, 0xFF00FF00);
+				
+				test_8 = readEEPROM_8(TEST_8_ADDRESS);
+				test_16 = readEEPROM_16(TEST_16_ADDRESS);
+				test_32 = readEEPROM_32(TEST_32_ADDRESS);
+				
+				uint16_t upper32 = test_32 >> 16;
+				uint16_t lower32 = (uint16_t)(test_32 & 0x0000FFFF);
+				
 				sprintf(line1Buff, "DISTANCE TEST:");
-				sprintf(line2Buff, "HUNDREDTHS: %d", fracHundredths);
-				sprintf(line3Buff, "TIME: TEST");
-				sprintf(line4Buff, "TOP SPEED: ");
+				sprintf(line2Buff, "HUNDREDTHS: %u", fracHundredths);
+				sprintf(line3Buff, "8=%u 16=%u", test_8, test_16);
+				sprintf(line4Buff, "32=%u %u", upper32, lower32);
 				
 				//update the time buffer
 				updateLIFETIMEFlag = 0xFF;

@@ -21,10 +21,10 @@ extern volatile uint32_t wheelCircumference;	//the circumference of the wheel, w
 extern uint8_t wholeSpeed;
 extern uint8_t fracSpeed;
 
+extern volatile uint32_t rawRevPerHundredthMile;	//the value that the leftover counter has to reach for an extra 100th mile to be added to the odometer
 extern volatile uint8_t revPerHundredthMile;	//is 1 + the number of FULL ROTATIONS of the wheel needed to travel 100th of a mile
 extern volatile uint32_t leftoverPerHundredthMile;	//(the fraction of a rotation EXTRA for every 1 + revPerHundredthMile completed) * 100,000
 extern volatile uint32_t leftoverCounter;	//tracks extra rotations * 100,000
-extern volatile uint32_t leftoverTarget;	//the value that the leftover counter has to reach for an extra 100th mile to be added to the odometer
 
 extern volatile uint8_t revCounter;		//keeps track of the completed revolutions, will be serviced often enough such that it remains below 255
 extern volatile uint32_t hundredthsTraveled;	//the amount of hundredths of a mile that you've gone for this ride

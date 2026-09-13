@@ -17,10 +17,10 @@ volatile uint32_t wheelCircumference = 86390;	//the circumference of the wheel *
 uint8_t wholeSpeed;
 uint8_t fracSpeed;
 
+volatile uint32_t rawRevPerHundredthMile = 0;
 volatile uint8_t revPerHundredthMile = 0;	//is 1 + the number of FULL ROTATIONS of the wheel needed to travel 100th of a mile
 volatile uint32_t leftoverPerHundredthMile = 0;	//(the fraction of a rotation EXTRA for every 1 + revPerHundredthMile completed) * 100,000
 volatile uint32_t leftoverCounter = 0;	//tracks extra rotations * 100,000
-volatile uint32_t leftoverTarget = 0;	//the value that the leftover counter has to reach for an extra 100th mile to be added to the odometer
 
 volatile uint8_t revCounter = 0;		//keeps track of the completed revolutions, will be serviced often enough such that it remains below 255
 volatile uint32_t hundredthsTraveled;	//the amount of hundredths of a mile that you've gone for this ride
@@ -129,12 +129,12 @@ ISR(TIMER1_CAPT_vect){	//ISR for ICF1
 }
 
 void calculateFactorsForDistance(){	//takes circumference and updates the variables needed for distance counting, resets the extra upon wheel circumference change for simplicity
-	uint32_t rawRevPerHundredthMile = DISTANCE_FACTOR / wheelCircumference;		//is rev per 100th times 100,000, works even for wheels with 5 in diameter (extremely small)
+	rawRevPerHundredthMile = DISTANCE_FACTOR / wheelCircumference;		//is rev per 100th times 100,000, works even for wheels with 5 in diameter (extremely small)
 	
 	revPerHundredthMile = (rawRevPerHundredthMile / 100000UL) + 1;	//number of full revolutions to complete 100th of a mile WITH EXTRA
 	leftoverPerHundredthMile = 100000UL - (rawRevPerHundredthMile % 100000UL);	//(the fraction of a rotation EXTRA for every 1 + revPerHundredthMile completed) * 100,000
-	
-	leftoverTarget = 100000UL * revPerHundredthMile;	//the value that the leftover counter must hit to be awarded an extra 100th mile
+
+	//the leftover target is rawREvPerHundredthMile
 	leftoverCounter = 0;	//reset leftover counter after calculating data new wheel
 }
 
@@ -145,9 +145,9 @@ void addDistance(){		//updates the amount of 100th miles you've gone
 		revCounter = revCounter - revPerHundredthMile;	//decrease the counter to show that you've accounted for the previous batch of revolutions
 		
 		leftoverCounter = leftoverCounter + leftoverPerHundredthMile;	//add to the leftover counter
-		if(leftoverCounter >= leftoverTarget){	//if the leftovers are enough to earn an extra 100th mile
+		if(leftoverCounter >= rawRevPerHundredthMile){	//if the leftovers are enough to earn an extra 100th mile
 			hundredthsTraveled++;	//add another 100th
-			leftoverCounter = leftoverCounter - leftoverTarget;	//decrease the counter to show you've taken care of the leftover
+			leftoverCounter = leftoverCounter - rawRevPerHundredthMile;	//decrease the counter to show you've taken care of the leftover
 		}
 	}
 	

@@ -172,7 +172,7 @@
 		  fracWheelCirc = (wheelCircumference /10) % 10;
 		  
 		  //load it into the buffer
-		  sprintf(line2Buff, "%03d.%d INCHES", wholeWheelCirc, fracWheelCirc );
+		  sprintf(line2Buff, "%03u.%u INCHES", wholeWheelCirc, fracWheelCirc );
 	  }
 	  else{	//if in metric mode
 		  uint32_t metricCirc = (wheelCircumference * 254) / 100;
@@ -181,7 +181,7 @@
 		  fracWheelCirc = (metricCirc / 10) % 10;
 		  
 		  //load it into the buffer
-		  sprintf(line2Buff, "%03d.%d CM", wholeWheelCirc, fracWheelCirc );
+		  sprintf(line2Buff, "%03u.%u CM", wholeWheelCirc, fracWheelCirc );
 	  }
   }	  
   
