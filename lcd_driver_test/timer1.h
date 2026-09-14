@@ -37,11 +37,17 @@ extern volatile uint32_t hundredthsTraveled;	//the amount of hundredths of a mil
 
 #define DISTANCE_FACTOR 63360000000ULL	//uint64, is inches per 100th mile times 10^8
 
+#define MAX_CIRC 190000UL
+#define MIN_CIRC 20000UL
+
 /**** CALLABLE FUNCTIONS ****/
 void init_tcnt1();
+void change_circumference(uint32_t newCircumference);	//updates global circumference variable and calculates new factors
+
 void calculateRawSpeed();	//raw speed is mph * 100
 void decay_raw_speed();
 void interpret_rawSpeed();	//updates the fracSpeed and wholeSpeed variables
+
 void addDistance();		//updates the amount of 100th miles you've gone
 
 /**** INTERNAL FUNCTIONS ****/

@@ -10,7 +10,8 @@
  //declare the present state variable
  volatile state present_state = RIDE;	//have the FSM start in the RIDE state by default
  volatile uint8_t updatePageFlag = 0x00;	//this flag is set upon state transition
- volatile uint16_t placeToChange = 0;	//stores the value of the place to be changed * 100, so 10000 for 100s, 1000 for 10s, etc
+ uint32_t tempCircumference = 0;	//stores the value of the temporary circumference while it's being changed
+ uint16_t placeToChange = 1;	//stores the place that is being changed * 10
 
  //subtables for each state
  
@@ -26,65 +27,67 @@
  const transition lifetime_transitions[] = //subtable for the LIFETIME state
  {
 	 //INPUT		NEXT STATE			TASK
-	 {BUTTON_NEXT,	WHEEL,				disp_wheel},
+	 {BUTTON_NEXT,	UNITS,				disp_units},
 	 {BUTTON_UP,	LIFETIME,			error_func},
 	 {BUTTON_DOWN,  LIFETIME,			error_func},
 	 {EOL,			LIFETIME,			error_func}
  };
  
+ const transition units_transitions[] = //subtable for the UNITS state
+ {
+	 //INPUT		NEXT STATE			TASK
+	 {BUTTON_NEXT,	WHEEL,				disp_wheel},
+	 {BUTTON_UP,	UNITS,				toggle_units},
+	 {BUTTON_DOWN,  UNITS,				toggle_units},
+	 {EOL,			UNITS,				error_func}
+ };
+ 
  const transition wheel_transitions[] = //subtable for the WHEEL state
  {
-	 //INPUT		NEXT STATE			TASK
-	 {BUTTON_NEXT,	UNITS,				disp_units},
-	 {BUTTON_UP,	HUNDREDS_CHANGE,	change_hundreds},
-	 {BUTTON_DOWN,  HUNDREDS_CHANGE,	change_hundreds},
-	 {EOL,			WHEEL,				error_func}
- };
- 
- const transition change_hundreds_transitions[] = //subtable for the CHANGE_TENS state
- {
-	 //INPUT		NEXT STATE			TASK
-	 {BUTTON_NEXT,	TENS_CHANGE,		change_tens},
-	 {BUTTON_UP,	HUNDREDS_CHANGE,	add_unit},
-	 {BUTTON_DOWN,  HUNDREDS_CHANGE,	subtract_unit},
-	 {EOL,			HUNDREDS_CHANGE,	error_func}
- };
- 
- const transition change_tens_transitions[] = //subtable for the CHANGE_TENS state
- {
-	 //INPUT		NEXT STATE			TASK
-	 {BUTTON_NEXT,	ONES_CHANGE,		change_ones},
-	 {BUTTON_UP,	TENS_CHANGE,		add_unit},
-	 {BUTTON_DOWN,  TENS_CHANGE,		subtract_unit},
-	 {EOL,			TENS_CHANGE,		error_func}
- };
- 
- const transition change_ones_transitions[] = //subtable for the CHANGE_ONES state
- {
-	 //INPUT		 NEXT STATE			TASK
-	 {BUTTON_NEXT,	TENTHS_CHANGE,		change_tenths},
-	 {BUTTON_UP,	ONES_CHANGE,		add_unit},
-	 {BUTTON_DOWN,  ONES_CHANGE,		subtract_unit},
-	 {EOL,			ONES_CHANGE,		error_func}
+	  //INPUT		NEXT STATE			TASK
+	  {BUTTON_NEXT,	RIDE,				disp_ride},
+	  {BUTTON_UP,	TENTHS_CHANGE,		change_tenths},
+	  {BUTTON_DOWN, TENTHS_CHANGE,		change_tenths},
+	  {EOL,			WHEEL,				error_func}  
  };
  
  const transition change_tenths_transitions[] = //subtable for the CHANGE_TENTHS state
  {
 	 //INPUT		NEXT STATE			TASK
-	 {BUTTON_NEXT,	UNITS,				disp_units},
+	 {BUTTON_NEXT,	ONES_CHANGE,		change_ones},
 	 {BUTTON_UP,	TENTHS_CHANGE,		add_unit},
 	 {BUTTON_DOWN,  TENTHS_CHANGE,		subtract_unit},
 	 {EOL,			TENTHS_CHANGE,		error_func}
  };
  
- const transition units_transitions[] = //subtable for the UNITS state
+ const transition change_ones_transitions[] = //subtable for the CHANGE_ONES state
  {
 	 //INPUT		NEXT STATE			TASK
-	 {BUTTON_NEXT,	RIDE,				disp_ride},
-	 {BUTTON_UP,	UNITS,				toggle_units},
-	 {BUTTON_DOWN,  UNITS,				toggle_units},
-	 {EOL,			UNITS,				error_func}
+	 {BUTTON_NEXT,	TENS_CHANGE,		change_tens},
+	 {BUTTON_UP,	ONES_CHANGE,		add_unit},
+	 {BUTTON_DOWN,  ONES_CHANGE,		subtract_unit},
+	 {EOL,			ONES_CHANGE,		error_func}
  };
+ 
+ const transition change_tens_transitions[] = //subtable for the CHANGE_TENS state
+ {
+	 //INPUT		 NEXT STATE			TASK
+	 {BUTTON_NEXT,	HUNDREDS_CHANGE,	change_hundreds},
+	 {BUTTON_UP,	TENS_CHANGE,		add_unit},
+	 {BUTTON_DOWN,  TENS_CHANGE,		subtract_unit},
+	 {EOL,			TENS_CHANGE,		error_func}
+ };
+ 
+ const transition change_hundreds_transitions[] = //subtable for the CHANGE_HUNDREDS state
+ {
+	 //INPUT		NEXT STATE			TASK
+	 {BUTTON_NEXT,	WHEEL,					disp_wheel},
+	 {BUTTON_UP,	HUNDREDS_CHANGE,		add_unit},
+	 {BUTTON_DOWN,  HUNDREDS_CHANGE,		subtract_unit},
+	 {EOL,			HUNDREDS_CHANGE,		error_func}
+ };
+ 
+ 
  
  // the outer array is an array of pointers to an array of transition
  // structures for the previous state
@@ -96,12 +99,12 @@
  {
 	 ride_transitions,
 	 lifetime_transitions,
+	 units_transitions,
 	 wheel_transitions,
-	 change_hundreds_transitions,
-	 change_tens_transitions,
-	 change_ones_transitions,
 	 change_tenths_transitions,
-	 units_transitions
+	 change_ones_transitions,
+	 change_tens_transitions,
+	 change_hundreds_transitions
  };
  
   void fsm(state ps, inputType input){ //takes the present state and the input in order to get next state and task
@@ -161,31 +164,9 @@
 	  updatePageFlag = 0xFF;
   }
 	  
-  void disp_circ(void){
-	  
-	  uint8_t wholeWheelCirc;
-	  uint8_t fracWheelCirc;
-	  
-	  if(!unitsFlag){	//if imperial
-		  //determine the whole and decimal part of the circumference
-		  wholeWheelCirc = wheelCircumference / 100;
-		  fracWheelCirc = (wheelCircumference /10) % 10;
-		  
-		  //load it into the buffer
-		  sprintf(line2Buff, "%03u.%u INCHES", wholeWheelCirc, fracWheelCirc );
-	  }
-	  else{	//if in metric mode
-		  uint32_t metricCirc = (wheelCircumference * 254) / 100;
-		  
-		  wholeWheelCirc = metricCirc / 100;
-		  fracWheelCirc = (metricCirc / 10) % 10;
-		  
-		  //load it into the buffer
-		  sprintf(line2Buff, "%03u.%u CM", wholeWheelCirc, fracWheelCirc );
-	  }
-  }	  
-  
   void disp_wheel(void){
+	  change_circumference(tempCircumference);	//when you enter this state, update the wheelCircumference variable to be the same as the temp circumference variable (in case the user changed it)
+	  
 	  sprintf(line1Buff, "WHEEL DIAMETER:");
 	  disp_circ();	//display circumference depending on the units
 	  sprintf(line3Buff, CLEAR_LINE);
@@ -195,7 +176,7 @@
   }
   
   void change_hundreds(void){
-	  placeToChange = 100 * 100;
+	  placeToChange = 1000;	//100 * 10
 	  
 	  sprintf(line1Buff, "CHANGE HUNDREDS");
 	  disp_circ();
@@ -203,10 +184,12 @@
 	  sprintf(line4Buff, CLEAR_LINE);
 	  
 	  updatePageFlag = 0xFF;
+	  
+	  //UPON LEAVING THIS STATE TO RETURN TO DISPLAYING THE WHEEL, THE ACTUAL CIRCUMFERENCE VARIABLE WILL BE UPDATED TO THE SAME AS THE TEMP VARIABLE, SOLIDIFYING THE USER'S CHANGE THAT THEY JUST MADE
   }
 	  
   void change_tens(void){
-	  placeToChange = 10 * 100;
+	  placeToChange = 100;	//10 * 10
 	  
 	  sprintf(line1Buff, "CHANGE TENS");
 	  disp_circ();
@@ -217,7 +200,7 @@
   }
 	  
   void change_ones(void){
-	  placeToChange = 1 * 100;
+	  placeToChange = 10; //1 * 10;
 	  
 	  sprintf(line1Buff, "CHANGE ONES");
 	  disp_circ();
@@ -228,7 +211,8 @@
   }
 	  
   void change_tenths(void){
-	  placeToChange = 10;	//0.1 * 100
+	  tempCircumference = wheelCircumference;	//set them equal only for this state, as tempCircumference and wheelCircumference will differ in te followin states
+	  placeToChange = 1;	//0.1 * 10
 	  
 	  sprintf(line1Buff, "CHANGE TENTHS");
 	  disp_circ();
@@ -237,65 +221,44 @@
 	  
 	  updatePageFlag = 0xFF;
   }
-  
-  uint8_t circ_boundary_check(uint16_t place, uint8_t upOrDown){	//checks if the digit that you want to change is already at 0 or 9, because then you can't go down or up respectively
-	  //returns 0xFF if you can add or subtract, 0x00 if you are at the boundary
-	  //upOrDown = 0xFF, up, upOrDown = 0x00, down
-	  //place should really be place * 100 when its passed in
-	  uint32_t tempCirc = wheelCircumference;
-	  
-	  if(unitsFlag){	//if metric
-		  tempCirc = (wheelCircumference * 254) / 100;	//convert to cm
-	  }
-	  //otherwise, tempCirc is the normal metric wheelCircuference
-	  
-	  uint8_t digit = (tempCirc / place) % 10;	//find the digit in the place you want to change
-	  
-	  if( ((upOrDown) && (digit == 9)) || ((!upOrDown) && (digit == 0)) ){	//if you try to go up from 9, or down from 0
-		  return 0x00;	//return 0 to show that you should do nothing
-	  }
-	  
-	  return 0xFF;	//return this value to show that you can change the digit
-  }
+ 
 	  
   void add_unit(void){
-	  
-	  if(circ_boundary_check((placeToChange), 0xFF)){	//see if you can add from this place
+	  if(can_change(UP)){	//if you can add the amount you want
 		  
-		  //then add a hundred	
 		  if(!unitsFlag){	//if imperial
-			  wheelCircumference += placeToChange;	//add place * 100  
+			tempCircumference = tempCircumference + ((uint32_t)(placeToChange * 100UL));	//add that amount
+			//have to manually promote placetochange to uint32 temporarily, spent a lot of time on this bug (if not adding 100s causes overflow)
 		  }
 		  else{	//if metric
-			  wheelCircumference += (39 * placeToChange) / 100;	//add 0.39 * 100 * place
-			  //ROOM FOR ERROR SINCE ITS REALLY 0.3937...
-		  }
+			 tempCircumference = tempCircumference +  (39370UL / (1000 / placeToChange));
+		  }  
+		  sprintf(line4Buff, "added");
+	  }
+	  else{
+		sprintf(line4Buff, "too high");
 	  }
 	  
-	  //otherwise, do nothing
-	  
-	  //and of course, remember to update the circumference on the display so the user can see that they changed it
 	  disp_circ();
 	  updatePageFlag = 0xFF;
   }
 	  
   void subtract_unit(void){
-	  
-	  if(circ_boundary_check((placeToChange), 0x00)){	//see if you can subtract a hundred from this place
+	  if(can_change(DOWN)){	//if you can subtract the amount you want
 		  
-		  //then add a hundred
 		  if(!unitsFlag){	//if imperial
-			  wheelCircumference -= placeToChange;	//subtract place * 100
+			  tempCircumference = tempCircumference - ((uint32_t)(placeToChange * 100UL));	//subtract that amount
+			  //have to manually promote placetochange to uint32 temporarily, spent a lot of time on this bug (if not adding 100s causes overflow)
 		  }
 		  else{	//if metric
-			  wheelCircumference -= (39 * placeToChange) / 100;;	//subract 0.39 * 100 * place
-			  //ROOM FOR ERROR SINCE ITS REALLY 0.3937...
+			  tempCircumference = tempCircumference -  (39370UL / (1000 / placeToChange));
 		  }
+		  sprintf(line4Buff, "subtracted");
+	  }
+	  else{
+		sprintf(line4Buff, "too low");
 	  }
 	  
-	  //otherwise, do nothing
-	  
-	  //and of course, remember to update the circumference on the display so the user can see that they changed it
 	  disp_circ();
 	  updatePageFlag = 0xFF;
   }
@@ -352,3 +315,82 @@
 	  updatePageFlag = 0xFF;
   }
   
+    void disp_circ(void){
+	    
+	    //displays the value of temp circumference
+	    
+	    uint16_t wholeWheelCirc;	//because in centimeter mode, you can exceed 255
+	    uint8_t fracWheelCirc;
+	    
+	    if(!unitsFlag){	//if imperial
+		    //determine the whole and decimal part of the circumference
+		    wholeWheelCirc = tempCircumference / 1000;
+		    fracWheelCirc = (tempCircumference % 1000) / 100;
+		    
+		    //load it into the buffer
+		    sprintf(line2Buff, "%03u.%u INCHES", wholeWheelCirc, fracWheelCirc );
+	    }
+	    else{	//if in metric mode
+		    uint32_t metricCirc = (tempCircumference * 254) / 100;
+		    
+		    wholeWheelCirc = metricCirc / 1000;
+		    fracWheelCirc = (metricCirc % 1000) / 100;
+		    
+		    //load circumference it into the buffer
+		    sprintf(line2Buff, "%03u.%u CM", wholeWheelCirc, fracWheelCirc );
+	    }
+		
+		//FOR DEBUGGING
+		uint16_t lowerVar = tempCircumference & 0x0000FFFF;
+		uint16_t upperVar = ((tempCircumference >> 16) & 0x0000FFFF);
+		sprintf(line3Buff, "var: %04x %04x", upperVar, lowerVar);
+    }
+    
+ uint8_t can_change(uint8_t up){	//checks if you can add or subtract from the current decimal place in the wheel circumference
+	 //max inches = 190.0 or 190,000 
+	 //max cm = 482.0 or 482,000
+	 
+	 //min inches = 20 or 20,000 (arbitrary)
+	 //min cm around 7.9 or 7,900
+	 
+	 // 1 in = 2.54 cm
+	 // 1 cm = 0.3937 in
+	 
+	 /* first, see if adding will put you above the max, or subtracting will put you below the min */
+	 uint32_t amountChanging;	//the amount that will be added or subtracted from the variable
+	 
+	 if(!unitsFlag){	//if imperial
+		amountChanging = ((uint32_t)100 * placeToChange);	//promote to uint32_t to avoid the overflow bug
+	 }
+	 else{	//if metric
+		 amountChanging = 39370UL / (1000 / placeToChange);
+	 }
+	 
+	 if(up){	//if you are adding
+		 if((MAX_CIRC - amountChanging) < tempCircumference){	//if adding puts you over 190,000
+			 return(0x00);	//indicate that you CAN'T change
+		 }
+	 }
+	 //otherwise, you're subtracting
+	 else if((MIN_CIRC + amountChanging) > tempCircumference){	//if subtracting puts you below 20,000
+		 return(0x00);	//indicate that you CAN'T change
+	 }
+	 
+	 
+	 /* if you made it here you wont violate the size limit of the whole variable, so see the if the digit itself will stay between 0-9*/
+	 uint8_t digit;
+	 
+	 if(unitsFlag){	//if metric
+		 uint32_t metricCirc = (tempCircumference * 254) / 100;	//convert first
+		 digit = ((metricCirc / 100) / placeToChange) % 10;	//where place to change is 10x, and circumference is 1000x
+	 }
+	 else{	//if imperial
+		 digit = ((tempCircumference / 100) / placeToChange) % 10;	//where place to change is 10x, and circumference is 1000x
+	 }
+	 
+	 if( (up && (digit >= 9)) || (!up && (digit <= 0)) ){	//if you try to go up from 9, or down from 0
+		 return(0x00);	//indicate that you CAN'T change
+	 }
+
+	 return(0xFF);	//indicate that you CAN change if you made it here
+ }

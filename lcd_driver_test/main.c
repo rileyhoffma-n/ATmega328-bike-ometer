@@ -23,6 +23,9 @@ int main(void)
 	init_tcnt1();	//initialize the wheel speed timer
 	init_tcnt0();	//initialize heartbeat timer
 	buttons_init();	//initialize the buttons
+	
+	//WHEN YOU ARE USING THE EEPROM
+	tempCircumference = wheelCircumference;	//make them the same on startup, AFTER YOU READ EEPROM STORED VALUE INTO wheelCircumference
 	sei();
 	
 	calculateFactorsForDistance();	//initialize odometer for new wheel size

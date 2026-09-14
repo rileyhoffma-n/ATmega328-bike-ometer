@@ -13,7 +13,7 @@ volatile uint16_t timeRevEnded;
 volatile uint8_t wheelRevCompleted;
 volatile uint32_t rawSpeed;	//the speed in mph x 100 * 1000 (times 100k)
 volatile uint8_t unitsFlag = 0x00;		//start in imperial units (0x00) by default
-volatile uint32_t wheelCircumference = 86390;	//the circumference of the wheel * 1000 in inches
+volatile uint32_t wheelCircumference = 86300;	//the circumference of the wheel * 1000 in inches
 uint8_t wholeSpeed;
 uint8_t fracSpeed;
 
@@ -152,4 +152,9 @@ void addDistance(){		//updates the amount of 100th miles you've gone
 	}
 	
 	sei();	//re enable interrupts
+}
+
+void change_circumference(uint32_t newCircumference){	//updates global circumference variable and calculates new factors
+	wheelCircumference = newCircumference;	//update the global variable
+	calculateFactorsForDistance();	//update the distance calculation factors
 }
