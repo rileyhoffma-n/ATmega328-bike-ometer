@@ -11,20 +11,20 @@ volatile uint8_t pressedFlag;
 volatile uint8_t buttonState;
 
 void buttons_init(void){
-	DDRC &= ~0x0E;	//make PC1-PC3 inputs (PCINT9-PCINT11)
+	DDRD &= ~0xE0;	//make PD5-PD7 inputs (PCINT21-PCINT23)
 	
-	PORTC |= (1 << PINC1) | (1 << PINC2) | (1 << PINC3);	//Enable internal pull ups (buttons should be LOW when PRESSED)
+	PORTD |= (1 << PIND5) | (1 << PIND6) | (1 << PIND7);	//Enable internal pull ups (buttons should be LOW when PRESSED)
 	
-	PCICR |= (1 << PCIE1);	//enable PCINT one to trigger interrupt
+	PCICR |= (1 << PCIE2);	//enable PCINT one to trigger interrupt on pins 23:16
 	
-	PCMSK1 |= (1 << PCINT9) | (1 << PCINT10) | (1 << PCINT11);	//enable PCINT9-11
+	PCMSK2 |= (1 << PCINT21) | (1 << PCINT22) | (1 << PCINT23);	//enable PCINT21-23
 	
 	pressedFlag = 0x00;	//clear the flag
 }
 
 void buttons_eval(void){
 	_delay_ms(debounce_delay);	//wait for buttons to settle
-	buttonState = (~PINC) & (0x0E);	// make buttonState be 0000xxx0	where x = 1 for pressed, x = 0 for NOT pressed
+	buttonState = (~PIND) & (0xE0);	// make buttonState be xxx00000	where x = 1 for pressed, x = 0 for NOT pressed
 	pressedFlag = 0x00;	//clear the pressed flag after evaluation
 }
 

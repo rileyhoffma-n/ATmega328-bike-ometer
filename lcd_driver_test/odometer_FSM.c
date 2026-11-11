@@ -129,16 +129,16 @@
   inputType getInput(void){		//tells the FSM what the input is based on the buttons
 	  buttons_eval();	//evaluate the buttons after they settle
 	  
-	  if(buttonState & 0x02){	//if button 1 was pressed (NEXT)
+	  if(buttonState & 0x20){	//if button 1 was pressed (NEXT)
 		 return(BUTTON_NEXT);
 	  }
-	  else if(buttonState & 0x04){	//if button 2 was pressed (UP)
+	  else if(buttonState & 0x40){	//if button 2 was pressed (UP)
 		  return(BUTTON_UP);
 	  }
-	  else if(buttonState & 0x08){	//if button 3 was pressed (DOWN)
+	  else if(buttonState & 0x80){	//if button 3 was pressed (DOWN)
 		  return(BUTTON_DOWN);
 	  }
-	  else{	//if multiple buttons at once or none
+	  else{	//if no buttons
 		  return(EOL);
 	  }
   }
