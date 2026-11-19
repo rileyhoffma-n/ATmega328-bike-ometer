@@ -35,8 +35,9 @@ void init_tcnt1(){	//initialize TCNT1 for normal mode, clk_io/256 prescale, fall
 	sei();			//enable global interrupts
 }
 
-void calculateRawSpeed(){	//raw speed is mph * 100
-	//this should mimic the equation [ (100 * wheelcircumference) * (F_CPU) * (3600)] / [ (prescale256) * (63360) * (#ofticks) ] = mph * 100 (with no decimal)
+void calculateRawSpeed(){	//raw speed is mph * 100 * 1000
+	//this should mimic the equation [100 * (1000 * wheelcircumference) * (F_CPU) * (3600)] / [ (prescale256) * (63360) * (#ofticks) ] = mph * 100 * 1000 (with no decimal)
+	//which simplifies to (circumference *1000 / #ticks) * 100 SPEED_FACTOR
 		
 		cli();	//make sure that ticks per rev or the flag can't be changed while you are using it to calculate
 		wheelRevCompleted = 0;	//reset the revolution flag
@@ -46,8 +47,6 @@ void calculateRawSpeed(){	//raw speed is mph * 100
 		//calculate the raw speed using fixed-point arithmetic
 		rawSpeed = SPEED_FACTOR * wheelCircumference;	//should not exceed 32 bits if circumference is less than 193500
 		rawSpeed = rawSpeed / atomicTicks;	//integer division is done last to preserve accuracy
-		
-	//ADD METRIC CONVERSION LATER, SHOULD STILL FIT INTO UINT32_T AT NORMAL SPEEDS
 }
 
 void decay_raw_speed(){	
@@ -115,8 +114,15 @@ uint64_t percent_decay(uint8_t percent, uint32_t number){	//returns roughly the 
 }
 
 void interpret_rawSpeed(){	//updates the fracSpeed and wholeSpeed variables (for display purposes)
-	  wholeSpeed = rawSpeed / 10000UL;
+	if(!unitsFlag){	//if imperial
+	  wholeSpeed = rawSpeed / 100000UL;
 	  fracSpeed = (rawSpeed % 10000UL) / 1000UL;	//gets it to two decimal places only
+	}
+	else{	//if metric
+		uint64_t metricRawSpeed = (rawSpeed * MPH_to_KMPH) / 100;	//times 100 * 1.61
+		wholeSpeed = metricRawSpeed / 100000UL;
+		fracSpeed = (metricRawSpeed % 10000UL) / 1000UL;	//gets it to two decimal places only
+	}
 }
 
 ISR(TIMER1_CAPT_vect){	//ISR for ICF1

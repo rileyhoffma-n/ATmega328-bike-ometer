@@ -57,7 +57,6 @@ int main(void)
 	uint32_t test_32;
 
 	while(1){
-		addDistance();	//add distance each loop JUST FOR TESTING ONLY
 		
 		if(pressedFlag){	//if a button has been pressed
 				
@@ -72,7 +71,11 @@ int main(void)
 			oneSecondFlag = 0x00;	//clear the one second flag			
 		}
 		
-		if(hundredMillisecondFlag){	//if 100ms have elapsed, time to refresh the speed and/or time
+		if(wheelRevCompleted){
+			addDistance();	//see if the distance has changed if a new wheel revolution occurred
+		}
+		
+		if(hundredMillisecondFlag){	//if 100ms have elapsed, time to refresh the LCD values
 			hundredMillisecondFlag = 0x00;	//clear the flag
 			
 			if(wheelRevCompleted){	//if a wheel revolution has been completed in the last 100ms
@@ -112,28 +115,28 @@ int main(void)
 				sprintf(line1Buff, "DISTANCE TEST:");
 				sprintf(line2Buff, "HUNDREDTHS: %u", fracHundredths);
 				sprintf(line3Buff, "8=%u 16=%u", test_8, test_16);
-				sprintf(line4Buff, "32=%u %u", upper32, lower32);
+				cli();
+				sprintf(line4Buff, "TPR %d", ticksPerRev );
+				sei();
 				
 				//update the time buffer
 				updateLIFETIMEFlag = 0xFF;
 			}
 		}
 		
-		if(updatePageFlag){
-			//TEMPORARY FOR TESTING
+		if(updatePageFlag){	//if the page has been changed by the FSM, update i
 			LCD_update_image(saddr);
 			
 			//update page
 			updatePageFlag = 0x00;	//clear flag
 		}
-		if(updateRIDEFlag){
-			//TEMPORARY FOR TESTING
-			updateRideLCD(saddr);
+		if(updateRIDEFlag){	//only true if on the RIDE page AND a new rev occurred, if so , update the ride values like speed, time etc
+			updateRideLCD(saddr);	//only updates the values on the screen, not the words which are constant
 			
 			//update RIDE
 			updateRIDEFlag = 0x00;	//clear flag
 		}
-		if(updateLIFETIMEFlag){
+		if(updateLIFETIMEFlag){	//only true if on the LIFETIME page
 			//TEMPORARY FOR TESTING
 			LCD_update_image(saddr);
 			

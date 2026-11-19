@@ -15,7 +15,7 @@ void buttons_init(void){
 	
 	PORTD |= (1 << PIND5) | (1 << PIND6) | (1 << PIND7);	//Enable internal pull ups (buttons should be LOW when PRESSED)
 	
-	PCICR |= (1 << PCIE2);	//enable PCINT one to trigger interrupt on pins 23:16
+	PCICR |= (1 << PCIE2);	//enable PCINT two to trigger interrupt on pins 23:16
 	
 	PCMSK2 |= (1 << PCINT21) | (1 << PCINT22) | (1 << PCINT23);	//enable PCINT21-23
 	
@@ -28,6 +28,6 @@ void buttons_eval(void){
 	pressedFlag = 0x00;	//clear the pressed flag after evaluation
 }
 
-ISR(PCINT1_vect){	//The ISR for a button press
+ISR(PCINT2_vect){	//The ISR for a button press
 	pressedFlag = 0xFF;	//set the button flag to indicate that a button has been pressed
 }

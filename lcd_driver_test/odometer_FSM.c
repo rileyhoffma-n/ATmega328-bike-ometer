@@ -167,7 +167,7 @@
   void disp_wheel(void){
 	  change_circumference(tempCircumference);	//when you enter this state, update the wheelCircumference variable to be the same as the temp circumference variable (in case the user changed it)
 	  
-	  sprintf(line1Buff, "WHEEL DIAMETER:");
+	  sprintf(line1Buff, "WHEEL CIRCUMFERENCE:");
 	  disp_circ();	//display circumference depending on the units
 	  sprintf(line3Buff, CLEAR_LINE);
 	  sprintf(line4Buff, CLEAR_LINE);
