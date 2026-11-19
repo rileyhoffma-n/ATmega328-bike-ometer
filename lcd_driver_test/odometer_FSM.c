@@ -149,13 +149,13 @@
   
   void disp_lifetime(void){
 	  sprintf(line1Buff, "   LIFETIME STATS   ");	//header
-	  sprintf(line2Buff, "    day:hr:mn:sc    ");	//time
+	  sprintf(line2Buff, "  TIME 00000:00:00  ");	//time
 	  
 	  if(!unitsFlag){	//if imperial
-		  sprintf(line3Buff, "    xxxxxx.xx MI    ");	//distance
+		  sprintf(line3Buff, "DISTANCE 00000.00 MI");	//distance
 	  }
 	  else{	//if metric
-		  sprintf(line3Buff, "    xxxxxx.xx KM    ");	//distance
+		  sprintf(line3Buff, "DISTANCE 00000.00 KM");	//distance
 	  }
 	  
 	  sprintf(line4Buff, CLEAR_LINE);	//don't know what to put here yet

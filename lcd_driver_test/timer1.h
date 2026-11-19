@@ -28,6 +28,9 @@ extern volatile uint32_t leftoverCounter;	//tracks extra rotations * 100,000
 
 extern volatile uint8_t revCounter;		//keeps track of the completed revolutions, will be serviced often enough such that it remains below 255
 extern volatile uint32_t hundredthsTraveled;	//the amount of hundredths of a mile that you've gone for this ride
+extern uint32_t hundredthsTraveledLifetime;	//the lifetime amount
+extern uint32_t wholeDistance;	//(for the display)
+extern uint8_t fracDistance;	//the hundredths of each unit of distance (for the display)
 
 /**** MACROS ****/
 #define F_CPU 1000000UL
@@ -47,6 +50,7 @@ void change_circumference(uint32_t newCircumference);	//updates global circumfer
 void calculateRawSpeed();	//raw speed is mph * 100
 void decay_raw_speed();
 void interpret_rawSpeed();	//updates the fracSpeed and wholeSpeed variables
+void interpret_distance();
 
 void addDistance();		//updates the amount of 100th miles you've gone
 

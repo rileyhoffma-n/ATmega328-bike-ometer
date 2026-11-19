@@ -26,13 +26,13 @@ extern char line3Buff[21];
 extern char line4Buff[21];
 //extern char speedBuff[16];	//room for speed to start on spot 5, + /0
 extern char rideBuff[21];	//room for speed, time, and distance numbers only + \0
+extern char lifetimeBuff[20];	//room for time and distance (for now) + \0
 
 //******** Macros ********
 #define LCD_regsel_bp 0
 #define LCD_rw_bp 1
 #define LCD_data_enable_bp 2
 #define LCD_BT_bp 3
-
 
 #define LCD_select_instructionReg_bm 0x00 << LCD_regsel_bp
 #define LCD_select_dataReg_bm 0x01 << LCD_regsel_bp
@@ -65,6 +65,8 @@ extern char rideBuff[21];	//room for speed, time, and distance numbers only + \0
 #define RIDE_BUFF_TIME 0	//the index of rideBuff where time starts
 #define RIDE_BUFF_SPEED 8	//the index of rideBuff where speed starts
 #define RIDE_BUFF_DISTANCE 13 //the index of rideBuff where the distance starts
+#define LIFETIME_BUFF_TIME 0
+#define LIFETIME_BUFF_DISTANCE 11
 
 //******** Internal Functions ********
 //these functions do start start or end an I2C communication themselves
@@ -81,5 +83,6 @@ uint8_t LCD_init(uint8_t saddr, uint8_t numLinesFont, uint8_t onCursorBlink, uin
 uint8_t LCD_update_image(uint8_t saddr);
 uint8_t updateSpeedLCD(uint8_t saddr);
 uint8_t updateRideLCD(uint8_t saddr);
+uint8_t updateLifetimeLCD(uint8_t saddr);
 
 #endif /* LCD_DRIVER_H_ */

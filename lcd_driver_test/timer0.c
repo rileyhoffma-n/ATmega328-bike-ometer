@@ -16,6 +16,11 @@ volatile uint8_t hundredMillisecondFlag;
 uint8_t secondsRide;
 uint8_t minutesRide;
 uint8_t hoursRide;
+uint16_t daysRide;
+
+uint8_t minutesLifetime = 20;	//THE DECLARED VALUES ARE FOR TESTING ONLY
+uint8_t hoursLifetime = 1;
+uint32_t daysLifetime = 10;
 
 
 /**** FUNCTIONS ****/
@@ -48,6 +53,8 @@ void increase_ride_time(){
 	if(secondsRide >= 60){
 		minutesRide++;
 		secondsRide = 0;
+		update_lifetime_time();	//updates every minute
+		
 		if(minutesRide >= 60){
 			hoursRide++;
 			minutesRide = 0;
@@ -56,8 +63,18 @@ void increase_ride_time(){
 	
 }
 
-void increase_lifetime_time(){
+void update_lifetime_time(){	//as is, this function will forget about up to 59 seconds on each ride, change it later if that's a big deal
+	minutesLifetime++;
 	
+	if(minutesLifetime >= 60){
+		hoursLifetime++;
+		minutesLifetime = 0;
+		
+		if(hoursLifetime >= 24){
+			daysLifetime++;
+			hoursLifetime = 0;
+		}
+	}
 }
 
 

@@ -21,13 +21,18 @@ extern volatile uint8_t numHundredMsTicks;
 extern uint8_t secondsRide;
 extern uint8_t minutesRide;
 extern uint8_t hoursRide;
+extern uint16_t daysRide;
+
+extern uint8_t minutesLifetime;
+extern uint8_t hoursLifetime;
+extern uint32_t daysLifetime;
 
 /**** MACROS ****/
 
 /**** CALLABLE FUNCTIONS ****/
 void init_tcnt0();
 void increase_ride_time();
-void increase_lifetime_time();
+void update_lifetime_time();
 
 
 /**** INTERNAL FUNCTIONS ****/

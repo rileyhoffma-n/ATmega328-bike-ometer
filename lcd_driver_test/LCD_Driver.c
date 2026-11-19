@@ -20,6 +20,7 @@ char line3Buff[21];
 char line4Buff[21];
 //char speedBuff[16];	//room for speed to start on spot 5, + /0
 char rideBuff[21];	//room for speed, time, and distance numbers only + \0
+char lifetimeBuff[20];	//room for time and distance (for now) + \0
 
 //**** FUNCTIONS ****
 uint8_t send_4bit_nibble(uint8_t nibble){	//FORMAT: D7, D6, D5, D4, BT, E, R/W, RS, assumes I2C frame is already started
@@ -100,7 +101,7 @@ uint8_t set_DDRAM_location(uint8_t desiredAddress){	//takes a 7 bit address
 		return 0x00;
 	}
 	
-	currentDDRAMaddress == desiredAddress;
+	currentDDRAMaddress = desiredAddress;
 	
 	return 0xFF;	//success
 }
@@ -266,7 +267,7 @@ uint8_t updateRideLCD(uint8_t saddr){	//only changes the numbers (not the consta
 	}
 	//send the time char by char until the speed is reached
 	uint8_t i = 0;
-	for(i; i < RIDE_BUFF_SPEED; i++){
+	for(; i < RIDE_BUFF_SPEED; i++){
 		if(!send_character(rideBuff[i])){
 			return 0x00;
 		}
@@ -277,7 +278,7 @@ uint8_t updateRideLCD(uint8_t saddr){	//only changes the numbers (not the consta
 		return 0x00;
 	}
 	//send the speed char by char until the distance is reached
-	for(i; i < RIDE_BUFF_DISTANCE; i++){
+	for(; i < RIDE_BUFF_DISTANCE; i++){
 		if(!send_character(rideBuff[i])){
 			return 0x00;
 		}
@@ -288,8 +289,47 @@ uint8_t updateRideLCD(uint8_t saddr){	//only changes the numbers (not the consta
 		return 0x00;
 	}
 	//send the distance char by char until the \0 is reached
-	for(i; rideBuff[i] != '\0'; i++){
+	for(; rideBuff[i] != '\0'; i++){
 		if(!send_character(rideBuff[i])){
+			return 0x00;
+		}
+		currentDDRAMaddress++;
+	}
+	
+	I2C_stop();	//stop the communication
+	
+	return 0xFF; //success
+}
+
+uint8_t updateLifetimeLCD(uint8_t saddr){	//only changes the numbers (not the constant letters) to save time and cpu
+	/*assuming the display is
+	---LIFETIME STATS---
+	--TIME ddddd:hh:mm--
+	DISTANCE 00000.00 MI
+	--------------------*/
+	
+	if(!I2C_start_write(saddr)){	//start the frame and address the LCD backpack
+		return 0x00;	//if the addressing failed at any point, return 0
+	}
+	
+	if(!set_DDRAM_location(LCD_line2_start + 7)){	//set the cursor to the 8th spot on line 2 for the time
+		return 0x00;
+	}
+	//send the time char by char until the distance is reached
+	uint8_t i = 0;
+	for(; i < LIFETIME_BUFF_DISTANCE; i++){
+		if(!send_character(lifetimeBuff[i])){
+			return 0x00;
+		}
+		currentDDRAMaddress++;
+	}
+	
+	if(!set_DDRAM_location(LCD_line3_start + 9)){	//set the cursor to the 10th spot on line 3 for the distance
+		return 0x00;
+	}
+	//send the distance char by char until the end is reached
+	for(; lifetimeBuff[i] != '\0'; i++){
+		if(!send_character(lifetimeBuff[i])){
 			return 0x00;
 		}
 		currentDDRAMaddress++;

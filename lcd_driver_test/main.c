@@ -24,6 +24,10 @@ int main(void)
 	init_tcnt0();	//initialize heartbeat timer
 	buttons_init();	//initialize the buttons
 	
+	//Read variables from EEPROM
+	//read circumference
+	//read lifetime variables
+	
 	//WHEN YOU ARE USING THE EEPROM
 	tempCircumference = wheelCircumference;	//make them the same on startup, AFTER YOU READ EEPROM STORED VALUE INTO wheelCircumference
 	sei();
@@ -41,15 +45,10 @@ int main(void)
 	LCD_update_image(saddr);
 	
 	//flags for main loop
-	//CCOMBINE THEM INTO ONE VARIABLE WITH MACROS ONCE YOU KNOW IT WORKS
+	//COMBINE THEM INTO ONE VARIABLE WITH MACROS ONCE YOU KNOW IT WORKS
 	updatePageFlag = 0x00; //part of the FSM
 	uint8_t updateRIDEFlag = 0x00;
 	uint8_t updateLIFETIMEFlag = 0x00;
-	
-	//variables for the current ride
-	
-	uint16_t wholeDistanceRide = 0;
-	uint8_t fracDistanceRide = 0;	//the hundredths of each unit of distance
 	
 	//EEPROM TEST
 	uint8_t test_8;
@@ -82,7 +81,6 @@ int main(void)
 				
 				calculateRawSpeed();	//then calculate the raw speed
 				//this also clears the revolution flag
-				interpret_rawSpeed();
 			}
 			else{	//if no revolution has been completed, apply decay if necessary
 				decay_raw_speed();	//evaluates current pulse width and decays speed
@@ -90,34 +88,40 @@ int main(void)
 			}
 			
 			if(present_state == RIDE){
-				sprintf(rideBuff, "%02u:%02u:%02u%02u.%02u%04u.%02u", hoursRide, minutesRide, secondsRide, wholeSpeed, fracSpeed, wholeDistanceRide, fracDistanceRide);
+				//update the distance/speed display variables
+				interpret_rawSpeed();
+				interpret_distance(hundredthsTraveled);
+				
+				sprintf(rideBuff, "%02u:%02u:%02u%02u.%02u%04lu.%02u", hoursRide, minutesRide, secondsRide, wholeSpeed, fracSpeed, wholeDistance, fracDistance);
 				//update the speed, time and distance buffer
 				//then do the update ride function which only updates these values, not the other words on the screen
 				updateRIDEFlag = 0xFF;
 			}
 			else if(present_state == LIFETIME){
+				interpret_distance(hundredthsTraveledLifetime);
+				sprintf(lifetimeBuff, "%05lu:%02u:%02u%05lu.%02u", daysLifetime, hoursLifetime, minutesLifetime, wholeDistance, fracDistance);
 				
 				//TEMPORARY FOR TESTING
-				uint16_t wholeHundredths = hundredthsTraveled / 100;
-				uint8_t fracHundredths = hundredthsTraveled % 100;
-				
-				updateEEPROM_8(TEST_8_ADDRESS, 123);
-				updateEEPROM_16(TEST_16_ADDRESS, 0xF0F0);
-				updateEEPROM_32(TEST_32_ADDRESS, 0xFF00FF00);
-				
-				test_8 = readEEPROM_8(TEST_8_ADDRESS);
-				test_16 = readEEPROM_16(TEST_16_ADDRESS);
-				test_32 = readEEPROM_32(TEST_32_ADDRESS);
-				
-				uint16_t upper32 = test_32 >> 16;
-				uint16_t lower32 = (uint16_t)(test_32 & 0x0000FFFF);
-				
-				sprintf(line1Buff, "DISTANCE TEST:");
-				sprintf(line2Buff, "HUNDREDTHS: %u", fracHundredths);
-				sprintf(line3Buff, "8=%u 16=%u", test_8, test_16);
-				cli();
-				sprintf(line4Buff, "TPR %d", ticksPerRev );
-				sei();
+// 				uint16_t wholeHundredths = hundredthsTraveled / 100;
+// 				uint8_t fracHundredths = hundredthsTraveled % 100;
+// 				
+// 				updateEEPROM_8(TEST_8_ADDRESS, 123);
+// 				updateEEPROM_16(TEST_16_ADDRESS, 0xF0F0);
+// 				updateEEPROM_32(TEST_32_ADDRESS, 0xFF00FF00);
+// 				
+// 				test_8 = readEEPROM_8(TEST_8_ADDRESS);
+// 				test_16 = readEEPROM_16(TEST_16_ADDRESS);
+// 				test_32 = readEEPROM_32(TEST_32_ADDRESS);
+// 				
+// 				uint16_t upper32 = test_32 >> 16;
+// 				uint16_t lower32 = (uint16_t)(test_32 & 0x0000FFFF);
+// 				
+// 				sprintf(line1Buff, "DISTANCE TEST:");
+// 				sprintf(line2Buff, "HUNDREDTHS: %u", fracHundredths);
+// 				sprintf(line3Buff, "8=%u 16=%u", test_8, test_16);
+// 				cli();
+// 				sprintf(line4Buff, "TPR %d", ticksPerRev );
+// 				sei();
 				
 				//update the time buffer
 				updateLIFETIMEFlag = 0xFF;
@@ -138,7 +142,7 @@ int main(void)
 		}
 		if(updateLIFETIMEFlag){	//only true if on the LIFETIME page
 			//TEMPORARY FOR TESTING
-			LCD_update_image(saddr);
+			updateLifetimeLCD(saddr);
 			
 			//update LIFETIME
 			updateLIFETIMEFlag = 0x00;	//clear flag

@@ -8,15 +8,18 @@
 #include "timer1.h"
 
 /**** GLOBALS ****/
+
+//wheel speed
 volatile uint16_t ticksPerRev;
 volatile uint16_t timeRevEnded;
-volatile uint8_t wheelRevCompleted;
+volatile uint8_t wheelRevCompleted = 0x00;	//flag
 volatile uint32_t rawSpeed;	//the speed in mph x 100 * 1000 (times 100k)
 volatile uint8_t unitsFlag = 0x00;		//start in imperial units (0x00) by default
 volatile uint32_t wheelCircumference = 86300;	//the circumference of the wheel * 1000 in inches
 uint8_t wholeSpeed;
 uint8_t fracSpeed;
 
+//distance
 volatile uint32_t rawRevPerHundredthMile = 0;
 volatile uint8_t revPerHundredthMile = 0;	//is 1 + the number of FULL ROTATIONS of the wheel needed to travel 100th of a mile
 volatile uint32_t leftoverPerHundredthMile = 0;	//(the fraction of a rotation EXTRA for every 1 + revPerHundredthMile completed) * 100,000
@@ -24,6 +27,9 @@ volatile uint32_t leftoverCounter = 0;	//tracks extra rotations * 100,000
 
 volatile uint8_t revCounter = 0;		//keeps track of the completed revolutions, will be serviced often enough such that it remains below 255
 volatile uint32_t hundredthsTraveled;	//the amount of hundredths of a mile that you've gone for this ride
+uint32_t wholeDistance = 0;
+uint8_t fracDistance = 0;	//the hundredths of each unit of distance
+uint32_t hundredthsTraveledLifetime = 200;	//the lifetime amount 200 IS FOR TESTING ONLY
 
 /**** FUNCTIONS ****/
 void init_tcnt1(){	//initialize TCNT1 for normal mode, clk_io/256 prescale, falling edge trigger
@@ -148,16 +154,30 @@ void addDistance(){		//updates the amount of 100th miles you've gone
 	cli();	//make it atomic since revCounter could change
 	if(revCounter >= revPerHundredthMile){	//if you've gone 100th of a mile
 		hundredthsTraveled++;	//add a hundredth to the counter
+		hundredthsTraveledLifetime++;
 		revCounter = revCounter - revPerHundredthMile;	//decrease the counter to show that you've accounted for the previous batch of revolutions
 		
 		leftoverCounter = leftoverCounter + leftoverPerHundredthMile;	//add to the leftover counter
 		if(leftoverCounter >= rawRevPerHundredthMile){	//if the leftovers are enough to earn an extra 100th mile
 			hundredthsTraveled++;	//add another 100th
+			hundredthsTraveledLifetime++;
 			leftoverCounter = leftoverCounter - rawRevPerHundredthMile;	//decrease the counter to show you've taken care of the leftover
 		}
 	}
 	
 	sei();	//re enable interrupts
+}
+
+void interpret_distance(uint32_t distance){	//updates the wholeDistanceRide and fracDistanceRide variables (for display purposes)
+	if(!unitsFlag){	//if imperial
+		fracDistance = distance % 100;
+		wholeDistance = distance / 100;	
+	}
+	else{	//if metric
+		uint64_t metricDistance = (distance * MPH_to_KMPH) / 100;	//times 100 * 1.61 then / 100 to preserve accuracy
+		fracDistance = ((uint32_t)metricDistance) % 100;
+		wholeDistance = ((uint32_t)metricDistance) / 100;	
+	}
 }
 
 void change_circumference(uint32_t newCircumference){	//updates global circumference variable and calculates new factors
